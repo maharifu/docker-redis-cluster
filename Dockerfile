@@ -7,27 +7,46 @@ ENV HOME /root
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install system dependencies
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -yqq \
-      net-tools supervisor ruby rubygems locales gettext-base wget && \
-    apt-get clean -yqq
+RUN apt-get update -qq \
+    && apt-get install --no-install-recommends -yqq \
+      gcc make g++ build-essential libc6-dev tcl git \
+      net-tools supervisor rubygems locales gettext-base wget \
+      zlib1g-dev libssl-dev libreadline-dev libgdbm-dev openssl
 
-# # Ensure UTF-8 lang and locale
-RUN locale-gen en_US.UTF-8
+# Ensure UTF-8 lang and locale
+RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
+    && ln -s /etc/locale.alias /usr/share/locale/locale.alias \
+    && locale-gen
 ENV LANG       en_US.UTF-8
 ENV LC_ALL     en_US.UTF-8
 
-RUN gem install redis
+# Install ruby 2.3 (redis requires ruby > 2.1)
+ARG ruby_version=2.3.5
+RUN mkdir /RUBY \
+    && cd /RUBY \
+    && wget https://cache.ruby-lang.org/pub/ruby/2.3/ruby-${ruby_version}.tar.gz \
+    && tar xvfz ruby-${ruby_version}.tar.gz \
+    && cd ruby-${ruby_version} \
+    && ./configure --disable-install-doc \
+    && make install \
+    && rm -rf /RUBY
 
-RUN apt-get install -y gcc make g++ build-essential libc6-dev tcl git supervisor ruby
-
+# Install redis
 ARG redis_version=3.2.9
-
-RUN wget -qO redis.tar.gz http://download.redis.io/releases/redis-${redis_version}.tar.gz \
+RUN gem install redis \
+    && wget -qO redis.tar.gz http://download.redis.io/releases/redis-${redis_version}.tar.gz \
     && tar xfz redis.tar.gz -C / \
-    && mv /redis-$redis_version /redis
+    && mv /redis-$redis_version /redis \
+    && cd /redis \
+    && make
 
-RUN (cd /redis && make)
+# Remove build dependencies
+RUN apt-get purge -yqq \
+      gcc make g++ build-essential libc6-dev tcl git \
+      zlib1g-dev libssl-dev libreadline-dev libgdbm-dev \
+    && apt-get -yqq autoremove \
+    && apt-get -qq clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN mkdir /redis-conf
 RUN mkdir /redis-data
