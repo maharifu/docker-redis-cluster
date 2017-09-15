@@ -1,6 +1,6 @@
 FROM redis:3.2
 
-MAINTAINER Johan Andersson <Grokzen@gmail.com>
+MAINTAINER Luís Carvalho <mail@lmcarvalho.com>
 
 # Some Environment Variables
 ENV HOME /root
