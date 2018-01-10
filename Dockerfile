@@ -1,5 +1,4 @@
-FROM redis:3.2
-
+FROM debian:jessie-slim
 MAINTAINER Luís Carvalho <mail@lmcarvalho.com>
 
 # Some Environment Variables
@@ -32,7 +31,7 @@ RUN mkdir /RUBY \
     && rm -rf /RUBY
 
 # Install redis
-ARG redis_version=3.2.9
+ARG redis_version=3.2.11
 RUN gem install redis \
     && wget -qO redis.tar.gz http://download.redis.io/releases/redis-${redis_version}.tar.gz \
     && tar xfz redis.tar.gz -C / \
